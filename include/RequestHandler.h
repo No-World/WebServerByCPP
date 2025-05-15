@@ -2,7 +2,7 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 08:57:17
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-15 10:17:38
+ * @LastEditTime: 2025-05-15 19:11:34
  * @FilePath: \WebServerByCPP\include\RequestHandler.h
  * @Description: 请求处理器类层次结构, 实现了HTTP请求处理的核心功能
  * 采用C++面向对象设计, 通过抽象基类和继承体现多态特性
@@ -59,13 +59,13 @@ class StaticFileHandler : public RequestHandler
 class CgiHandler : public RequestHandler
 {
   public:
-    explicit CgiHandler(const std::string &root = "httpdocs");
+    explicit CgiHandler(const std::string &root = "httpdocs"); // 初始化CGI处理器, 设置CGI脚本根目录
 
     // 实现基类的纯虚函数
     void handle(const HttpRequest &request, int client_socket) override;
 
   private:
-    void executeCgi(const HttpRequest &request, int client_socket);
+    void executeCgi(const HttpRequest &request, int client_socket); // CGI脚本执行函数
 };
 
 #endif // REQUEST_HANDLER_H
