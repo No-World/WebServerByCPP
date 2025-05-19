@@ -3,7 +3,7 @@
 
 # 编译器设置
 CXX = g++
-CXXFLAGS = -std=c++11 -Wall -Wextra -I./include
+CXXFLAGS = -std=c++14 -Wall -Wextra -I./include
 
 # 目标文件
 TARGET = myhttp

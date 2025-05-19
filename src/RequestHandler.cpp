@@ -2,7 +2,7 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 19:26:41
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-19 16:31:54
+ * @LastEditTime: 2025-05-19 16:37:23
  * @FilePath: \WebServerByCPP\src\RequestHandler.cpp
  * @Description: HTTP请求处理器实现，采用策略模式区分静态文件和CGI处理
  * 包含RequestHandler基类及StaticFileHandler和CgiHandler两个子类
@@ -13,6 +13,8 @@
  */
 #include "../include/RequestHandler.h"
 #include "../include/HttpResponse.h"
+#include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <sys/stat.h>
@@ -101,7 +103,6 @@ void CgiHandler::executeCgi(const HttpRequest &request, int client_socket, std::
     const std::string &method = request.getMethod();
     const std::string &query_string = request.getQueryString();
 
-    char buf[1024];
     int cgi_output[2];
     int cgi_input[2];
 
