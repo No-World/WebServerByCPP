@@ -2,12 +2,17 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 19:26:41
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-15 19:42:37
+ * @LastEditTime: 2025-05-19 14:43:48
  * @FilePath: \WebServerByCPP\src\RequestHandler.cpp
- * @Description:
+ * @Description: HTTP请求处理器实现，采用策略模式区分静态文件和CGI处理
+ * 包含RequestHandler基类及StaticFileHandler和CgiHandler两个子类
+ * StaticFileHandler负责读取和发送静态文件内容，实现了基本的HTTP静态资源服务
+ * CgiHandler实现了CGI脚本执行机制，支持GET和POST方法，使用管道进行进程间通信
+ * 提供了跨平台支持，在Windows和Unix/Linux系统下有不同实现方式
+ * 通过工厂方法根据请求类型自动创建合适的处理器实例
  */
-#include "../include/RequestHandler.h"
-#include "../include/HttpResponse.h"
+#include "include/RequestHandler.h"
+#include "include/HttpResponse.h"
 #include <fstream>
 #include <iostream>
 #include <sys/stat.h>
@@ -20,6 +25,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
 #endif
 
 // 基类构造函数
@@ -32,11 +38,11 @@ std::unique_ptr<RequestHandler> RequestHandler::createHandler(const HttpRequest 
 {
     if (request.isCgi())
     {
-        return std::make_unique<CgiHandler>();
+        return std::make_unique<CgiHandler>(request.getDocRoot());
     }
     else
     {
-        return std::make_unique<StaticFileHandler>();
+        return std::make_unique<StaticFileHandler>(request.getDocRoot());
     }
 }
 
@@ -94,7 +100,7 @@ void CgiHandler::executeCgi(const HttpRequest &request, int client_socket)
     int cgi_output[2];
     int cgi_input[2];
 
-#ifdef _WIN32 // Windows实现CGI执行 - 需要特殊处理
+#ifdef _WIN32 // Windows实现CGI执行 - 未实现
     HttpResponse response = HttpResponse::serverError();
     response.setBody("CGI execution not implemented on Windows in this version.");
     response.send(client_socket);
@@ -107,7 +113,11 @@ void CgiHandler::executeCgi(const HttpRequest &request, int client_socket)
     // 检查Content-Length（如果是POST请求）
     if (method == "POST")
     {
-        auto it = request.headers.find("Content-Length");
+        std::string contentLength = request.getHeader("Content-Length");
+        if (!contentLength.empty())
+        {
+            content_length = std::stoi(contentLength);
+        }
         if (it != request.headers.end())
         {
             content_length = std::stoi(it->second);

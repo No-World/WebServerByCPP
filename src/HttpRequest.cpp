@@ -2,188 +2,294 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 19:26:23
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-15 19:42:09
+ * @LastEditTime: 2025-05-16 15:35:25
  * @FilePath: \WebServerByCPP\src\HttpRequest.cpp
- * @Description:
+ * @Description: HTTP请求解析实现, 负责从客户端socket读取数据并解析HTTP请求
+ * 支持GET和POST请求处理, 包含请求解析、查询字符串提取、文件路径解析和HTTP头解析
+ * 实现了跨平台兼容(Windows/Unix)的网络数据读取和字符串处理
  */
-#include "../include/HttpRequest.h"
+#include "include/HttpRequest.h"
+#include <algorithm>
 #include <cstring>
 #include <iostream>
 #include <sys/stat.h>
 
-// 构造函数：初始化成员变量
-HttpRequest::HttpRequest() : is_cgi(false)
+// 添加网络编程头文件（跨平台兼容）
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "Ws2_32.lib")
+#define strcasecmp _stricmp // Windows下strcasecmp的替代
+const char PATH_SEP = '\\';
+
+#else
+#include <strings.h> // 提供strcasecmp
+#include <sys/socket.h>
+#include <unistd.h>
+const char PATH_SEP = '/';
+
+#endif
+
+// 构造函数初始化
+HttpRequest::HttpRequest(const std::string &root, const std::string &default_doc)
+    : method(), url(), path(), query_string(), headers(), is_cgi(false), error_message(), DOC_ROOT(root),
+      DEFAULT_DOCUMENT(default_doc)
 {
-    // 默认初始化
+    // 从配置参数初始化
 }
 
 // 静态方法：从socket读取一行数据
-int HttpRequest::getLine(int sock, char *buf, int size)
+int HttpRequest::getLine(int sock, std::string &buf)
 {
-    int i = 0;
+    // 使用静态缓冲区提高性能
+    static char read_buffer[MAX_LINE_LENGTH];
+    static int buffer_pos = 0;
+    static int bytes_in_buffer = 0;
+
+    buf.clear(); // 清空字符串
     char c = '\0';
-    int n;
 
-    while ((i < size - 1) && (c != '\n'))
+    while (buf.length() < MAX_LINE_LENGTH - 1 && c != '\n')
     {
-        n = recv(sock, &c, 1, 0);
-
-        if (n > 0)
+        // 如果缓冲区为空，从socket读取更多数据
+        if (buffer_pos >= bytes_in_buffer)
         {
-            if (c == '\r')
-            {
-                n = recv(sock, &c, 1, MSG_PEEK);
-                if ((n > 0) && (c == '\n'))
-                    recv(sock, &c, 1, 0);
-                else
-                    c = '\n';
-            }
-            buf[i] = c;
-            i++;
+            bytes_in_buffer = recv(sock, read_buffer, sizeof(read_buffer), 0);
+            if (bytes_in_buffer <= 0)
+                break;
+            buffer_pos = 0;
         }
-        else
-            c = '\n';
+
+        c = read_buffer[buffer_pos++];
+
+        // 处理CR+LF序列 (Windows风格的行结束)
+        if (c == '\r')
+        {
+            // 检查下一个字符是否为\n
+            if (buffer_pos < bytes_in_buffer)
+            {
+                if (read_buffer[buffer_pos] == '\n')
+                {
+                    buffer_pos++; // 跳过\n
+                }
+                c = '\n';
+            }
+            else
+            {
+                // 如果\r在缓冲区末尾，读取下一个字符
+                char next;
+                int peek_result = recv(sock, &next, 1, MSG_PEEK);
+                if (peek_result > 0 && next == '\n')
+                {
+                    recv(sock, &next, 1, 0); // 消费\n
+                }
+                c = '\n';
+            }
+        }
+
+        if (c != '\n') // 不存储最后的换行符
+        {
+            buf.push_back(c);
+        }
     }
-    buf[i] = '\0';
-    return i;
+
+    return buf.length();
 }
 
-// 解析HTTP请求
-bool HttpRequest::parse(int client_socket)
+// 判断文件是否存在且检查其类型
+bool HttpRequest::checkFileAccess()
 {
-    char buf[1024];
-    char method_temp[255];
-    char url_temp[255];
-    char path_temp[512];
-    int numchars;
-    size_t i, j;
     struct stat st;
-    char *query_string_temp = nullptr;
-
-    // 读取第一行，包含请求方法和URL
-    numchars = getLine(client_socket, buf, sizeof(buf));
-    if (numchars <= 0)
-    {
-        return false;
-    }
-
-    // 解析请求方法
-    i = 0;
-    j = 0;
-    while (!isspace(buf[j]) && (i < sizeof(method_temp) - 1))
-    {
-        method_temp[i++] = buf[j++];
-    }
-    method_temp[i] = '\0';
-    method = method_temp; // 使用C++的std::string
-
-    // 检查请求方法是否支持
-    if (strcasecmp(method.c_str(), "GET") != 0 && strcasecmp(method.c_str(), "POST") != 0)
-    {
-        // 不支持的方法
-        return false;
-    }
-
-    // POST请求一定触发CGI
-    if (strcasecmp(method.c_str(), "POST") == 0)
-    {
-        is_cgi = true;
-    }
-
-    // 跳过空格
-    while (isspace(buf[j]) && (j < sizeof(buf)))
-    {
-        j++;
-    }
-
-    // 解析URL
-    i = 0;
-    while (!isspace(buf[j]) && (i < sizeof(url_temp) - 1) && (j < sizeof(buf)))
-    {
-        url_temp[i++] = buf[j++];
-    }
-    url_temp[i] = '\0';
-    url = url_temp; // 使用C++的std::string
-
-    // 处理GET请求的查询字符串
-    if (strcasecmp(method.c_str(), "GET") == 0)
-    {
-        query_string_temp = url_temp;
-        while ((*query_string_temp != '?') && (*query_string_temp != '\0'))
-        {
-            query_string_temp++;
-        }
-
-        if (*query_string_temp == '?')
-        {
-            is_cgi = true;
-            *query_string_temp = '\0';
-            query_string_temp++;
-            query_string = query_string_temp; // 设置查询字符串
-        }
-    }
-
-    // 构造文件路径
-    sprintf(path_temp, "httpdocs%s", url.c_str());
-    path = path_temp;
-
-    // 处理目录请求，默认添加test.html
-    if (path[path.length() - 1] == '/')
-    {
-        path += "test.html";
-    }
-
-    // 检查文件是否存在
     if (stat(path.c_str(), &st) == -1)
     {
-        // 清空剩余的请求头
-        while ((numchars > 0) && strcmp("\n", buf))
-        {
-            numchars = getLine(client_socket, buf, sizeof(buf));
-        }
-        return false; // 文件不存在
+        error_message = "File not found: " + path;
+        return false;
     }
 
     // 处理目录
     if ((st.st_mode & S_IFMT) == S_IFDIR)
     {
-        path += "/test.html";
+        if (path.back() != '/' && path.back() != PATH_SEP)
+        {
+            path += PATH_SEP;
+        }
+        path += DEFAULT_DOCUMENT;
+
+        // 再次检查文件是否存在
+        if (stat(path.c_str(), &st) == -1)
+        {
+            error_message = "Default document not found: " + path;
+            return false;
+        }
     }
 
-    // 检查文件是否可执行，如果可执行则触发CGI
+    // 检查文件是否可执行
     if ((st.st_mode & S_IXUSR) || (st.st_mode & S_IXGRP) || (st.st_mode & S_IXOTH))
     {
         is_cgi = true;
     }
 
-    // 读取并存储HTTP头信息
-    numchars = getLine(client_socket, buf, sizeof(buf));
-    while ((numchars > 0) && strcmp("\n", buf))
+    return true;
+}
+
+// 解析HTTP请求
+bool HttpRequest::parse(int client_socket)
+{
+    std::string buf;
+    int numchars;
+
+    // 防止恶意请求设置超时
+    // (实际实现应考虑设置socket超时选项)
+
+    // 读取第一行，包含请求方法和URL
+    numchars = getLine(client_socket, buf);
+    if (numchars <= 0)
     {
-        buf[numchars - 1] = '\0'; // 移除换行符
+        error_message = "Empty request";
+        return false;
+    }
+
+    // 解析请求方法
+    size_t start = 0;
+    size_t end = buf.find_first_of(" \t");
+    if (end != std::string::npos)
+    {
+        method = buf.substr(start, end - start);
+        // 统一转换为大写以便不区分大小写比较
+        std::transform(method.begin(), method.end(), method.begin(), ::toupper);
+    }
+    else
+    {
+        error_message = "Invalid request format";
+        return false;
+    }
+
+    // 检查请求方法是否支持
+    if (method != "GET" && method != "POST")
+    {
+        error_message = "Method not supported: " + method;
+        return false;
+    }
+
+    // POST请求一定触发CGI
+    if (method == "POST")
+    {
+        is_cgi = true;
+    }
+
+    // 解析URL
+    start = buf.find_first_not_of(" \t", end);
+    if (start == std::string::npos)
+    {
+        error_message = "URL not found in request";
+        return false;
+    }
+
+    end = buf.find_first_of(" \t", start);
+    url = buf.substr(start, (end != std::string::npos) ? end - start : std::string::npos);
+
+    // 防止目录遍历攻击
+    if (url.find("..") != std::string::npos)
+    {
+        error_message = "Invalid URL path (directory traversal attempt)";
+        return false;
+    }
+
+    // 处理GET请求的查询字符串
+    if (method == "GET")
+    {
+        size_t query_pos = url.find('?');
+        if (query_pos != std::string::npos)
+        {
+            query_string = url.substr(query_pos + 1);
+            url = url.substr(0, query_pos);
+            is_cgi = true;
+        }
+    }
+
+    // 构造文件路径
+    // 确保DOC_ROOT末尾有斜杠，url开头没有斜杠
+    if (!DOC_ROOT.empty() && DOC_ROOT.back() != '/')
+        DOC_ROOT += '/';
+    if (!url.empty() && url[0] == '/')
+        url = url.substr(1);
+    path = DOC_ROOT + url;
+
+    // 规范化路径格式并处理默认文件
+    std::replace(path.begin(), path.end(), '/', PATH_SEP);
+    if (path.back() == PATH_SEP)
+    {
+        path += DEFAULT_DOCUMENT;
+    }
+
+    // 检查文件访问权限
+    if (!checkFileAccess())
+    {
+        // 清空剩余的请求头
+        while ((numchars > 0) && buf != "\n")
+        {
+            numchars = getLine(client_socket, buf);
+        }
+        return false;
+    }
+
+    // 读取并存储HTTP头信息
+    numchars = getLine(client_socket, buf);
+    while ((numchars > 0) && !buf.empty())
+    {
+        // 移除末尾的\r (如果存在)
+        if (!buf.empty() && buf.back() == '\r')
+        {
+            buf.pop_back();
+        }
 
         // 解析头部信息
-        char *colon = strchr(buf, ':');
-        if (colon)
+        size_t colon_pos = buf.find(':');
+        if (colon_pos != std::string::npos)
         {
-            *colon = '\0';
-            std::string header_name = buf;
-            std::string header_value = colon + 1;
+            std::string header_name = buf.substr(0, colon_pos);
+            std::string header_value = buf.substr(colon_pos + 1);
+
+            // 规范化头部名称 (不区分大小写)
+            std::transform(header_name.begin(), header_name.end(), header_name.begin(), ::tolower);
 
             // 去除值前面的空格
-            while (header_value[0] == ' ')
+            size_t value_start = header_value.find_first_not_of(" \t");
+            if (value_start != std::string::npos)
             {
-                header_value.erase(0, 1);
+                header_value = header_value.substr(value_start);
             }
 
             // 存储头部信息
             headers[header_name] = header_value;
+
+            // 检查Content-Length (对POST请求)
+            if (method == "POST" && header_name == "content-length")
+            {
+                // 实际处理应在这里解析并验证内容长度
+            }
         }
 
-        numchars = getLine(client_socket, buf, sizeof(buf));
+        numchars = getLine(client_socket, buf);
     }
 
     return true; // 解析成功
+}
+
+// 获取错误信息方法
+const std::string &HttpRequest::getErrorMessage() const
+{
+    return error_message;
+}
+
+std::string HttpRequest::getHeader(const std::string &name) const
+{
+    auto it = headers.find(name);
+    if (it != headers.end())
+    {
+        return it->second;
+    }
+    return ""; // 未找到则返回空字符串
 }
 
 // 友元函数：重载输出运算符
@@ -192,13 +298,19 @@ std::ostream &operator<<(std::ostream &os, const HttpRequest &req)
     os << "Method: " << req.method << "\n"
        << "URL: " << req.url << "\n"
        << "Path: " << req.path << "\n"
-       << "Query: " << req.query_string << "\n"
-       << "CGI: " << (req.is_cgi ? "Yes" : "No") << "\n"
+       << "Query String: " << req.query_string << "\n"
+       << "CGI Request: " << (req.is_cgi ? "Yes" : "No") << "\n"
        << "Headers:\n";
 
+    // 使用C++11 range-based for循环
     for (const auto &header : req.headers)
     {
         os << "  " << header.first << ": " << header.second << "\n";
+    }
+
+    if (!req.error_message.empty())
+    {
+        os << "Error: " << req.error_message << "\n";
     }
 
     return os;

@@ -2,9 +2,9 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 08:51:24
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-15 09:23:24
+ * @LastEditTime: 2025-05-19 14:35:00
  * @FilePath: \WebServerByCPP\include\HttpServer.h
- * @Description:  HTTP服务器核心类，实现了跨平台(Windows/Unix)的网络服务器功能。
+ * @Description: HTTP服务器核心类，实现了跨平台(Windows/Unix)的网络服务器功能。
  * 负责socket初始化、客户端连接管理和请求分发
  * 采用多线程模型处理并发请求, 提供优雅的启动和关闭机制
  * 遵循RAII设计原则, 通过构造函数和析构函数自动管理资源
@@ -42,6 +42,9 @@ class HttpServer
     std::atomic<bool> running;        // 运行状态标志
     std::vector<std::thread> threads; // 线程池
 
+    std::string doc_root;         // 文档根目录
+    std::string default_document; // 默认文档
+
     // 私有方法
     void handleClient(int client_socket); // 处理客户端请求
     void initSocket();                    // 初始化socket
@@ -53,7 +56,15 @@ class HttpServer
   public:
     // 构造与析构
     explicit HttpServer(unsigned short port = 6379); // 构造函数, 设置默认端口6379
-    ~HttpServer();                                   // 析构函数
+    const std::string &getDocRoot() const            // 获取文档根目录
+    {
+        return doc_root;
+    }
+    const std::string &getDefaultDocument() const // 获取默认文档
+    {
+        return default_document;
+    }
+    ~HttpServer(); // 析构函数
 
     // 主要接口
     void start(); // 启动服务器

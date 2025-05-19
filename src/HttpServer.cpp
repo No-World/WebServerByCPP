@@ -2,14 +2,19 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 19:25:52
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-15 19:41:05
+ * @LastEditTime: 2025-05-19 14:32:32
  * @FilePath: \WebServerByCPP\src\HttpServer.cpp
- * @Description:
+ * @Description: HTTP服务器核心实现，提供服务器的初始化、启动、停止和请求处理功能
+ * 采用跨平台设计，通过条件编译支持Windows和Unix/Linux系统的套接字操作差异
+ * 实现了多线程客户端请求处理，提高并发性能，支持短连接和异常处理机制
+ * 集成ConfigManager读取配置参数，灵活调整服务器行为
+ * 通过组合HttpRequest、HttpResponse和RequestHandler等组件，实现完整的HTTP请求响应流程
  */
-#include "../include/HttpServer.h"
-#include "../include/HttpRequest.h"
-#include "../include/HttpResponse.h"
-#include "../include/RequestHandler.h"
+#include "include/HttpServer.h"
+#include "include/ConfigManager.h"
+#include "include/HttpRequest.h"
+#include "include/HttpResponse.h"
+#include "include/RequestHandler.h"
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
@@ -34,8 +39,12 @@ void HttpServer::platformCleanup()
 }
 
 // 构造函数
-HttpServer::HttpServer(unsigned short port) : port(port), server_socket(-1), running(false)
+HttpServer::HttpServer(unsigned short port)
+    : port(ConfigManager::getInt("port", port)), server_socket(-1), running(false)
 {
+    ConfigManager::loadConfig("config/server.conf");
+    doc_root = ConfigManager::getString("document_root", "httpdocs");
+    default_document = ConfigManager::getString("default_document", "test.html");
 }
 
 // 析构函数
@@ -192,6 +201,8 @@ void HttpServer::stop()
 // 处理客户端请求
 void HttpServer::handleClient(int client_sock)
 {
+    // 创建请求对象时传入配置
+    HttpRequest request(doc_root, default_document);
     try
     {
         // 创建请求对象

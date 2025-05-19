@@ -4,7 +4,11 @@
  * @LastEditors: No_World 2259881867@qq.com
  * @LastEditTime: 2025-05-15 19:40:46
  * @FilePath: \WebServerByCPP\include\HttpResponse.h
- * @Description:
+ * @Description: HTTP响应类定义，负责创建和发送符合HTTP协议的服务器响应
+ * 支持设置状态码、头部信息和响应体，提供了流式API设计
+ * 包含常用HTTP状态的工厂方法，简化200/404/400/500等标准响应的创建
+ * 实现了文件传输功能，支持高效发送静态文件内容
+ * 自动添加标准头信息，确保响应符合HTTP规范要求
  */
 #ifndef HTTP_RESPONSE_H
 #define HTTP_RESPONSE_H

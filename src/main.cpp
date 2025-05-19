@@ -2,7 +2,7 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 09:00:09
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-15 19:25:26
+ * @LastEditTime: 2025-05-19 14:37:08
  * @FilePath: \WebServerByCPP\src\main.cpp
  * @Description: HTTP服务器程序入口点，负责服务器初始化、实例创建和信号处理
  * 实现了优雅的启动与关闭机制，通过信号处理（如SIGINT）支持用户中断操作
@@ -10,6 +10,7 @@
  * 使用跨平台初始化和清理函数，确保在不同操作系统上正常工作
  * 作为C++重构版HTTP服务器的驱动程序，展示了现代C++的错误处理和资源管理方法
  */
+#include "include/ConfigManager.h"
 #include "include/HttpServer.h"
 #include <csignal>
 #include <iostream>
@@ -35,7 +36,9 @@ int main()
         HttpServer::platformInit();
 
         // 创建服务器
-        HttpServer server(6379); // 创建server对象，设置默认端口6379
+        ConfigManager::loadConfig("config/server.conf");
+        unsigned short port = ConfigManager::getInt("port", 6379);
+        HttpServer server(port); // 创建server对象，设置默认端口6379
         g_server = &server;
 
         // 注册信号处理
