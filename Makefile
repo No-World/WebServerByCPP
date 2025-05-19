@@ -61,7 +61,7 @@ clean:
 # 运行程序
 run: all
 	@echo "启动HTTP服务器..."
-	@cd $(BIN_DIR) && ./$(TARGET)
+	@cd $(BIN_DIR) && cd .. && ./bin/$(TARGET)
 
 # 调试版本（添加调试信息）
 debug: CXXFLAGS += -g -DDEBUG
