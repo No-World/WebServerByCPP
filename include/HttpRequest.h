@@ -2,7 +2,7 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 08:54:57
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-16 11:11:34
+ * @LastEditTime: 2025-05-19 15:53:25
  * @FilePath: \WebServerByCPP\include\HttpRequest.h
  * @Description: HTTP请求解析类，负责解析客户端发送的HTTP请求，提取请求方法、URL、路径、查询字符串
  * 和HTTP头信息。支持CGI请求识别，采用封装设计原则，提供安全访问内部数据的getter方法。
@@ -38,6 +38,9 @@ class HttpRequest
 
     // 检查文件访问权限
     bool checkFileAccess();
+
+    // url解析函数
+    static std::string urlDecode(const std::string &encoded);
 
   public:
     // 带配置参数的构造函数

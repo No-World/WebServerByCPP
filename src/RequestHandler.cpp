@@ -2,7 +2,7 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 19:26:41
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-19 14:43:48
+ * @LastEditTime: 2025-05-19 15:55:54
  * @FilePath: \WebServerByCPP\src\RequestHandler.cpp
  * @Description: HTTP请求处理器实现，采用策略模式区分静态文件和CGI处理
  * 包含RequestHandler基类及StaticFileHandler和CgiHandler两个子类
@@ -20,11 +20,13 @@
 #ifdef _WIN32
 #include <process.h>
 #include <windows.h>
+const char PATH_SEP = '\\';
 
 #else
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+const char PATH_SEP = '/';
 
 #endif
 
@@ -54,7 +56,11 @@ StaticFileHandler::StaticFileHandler(const std::string &root) : RequestHandler(r
 void StaticFileHandler::handle(const HttpRequest &request, int client_socket)
 {
     // 构造完整的文件路径
-    std::string fullPath = doc_root + request.getPath();
+    std::string fullPath;
+    if (!doc_root.empty() && doc_root.back() != '/' && !request.getPath().empty() && request.getPath()[0] != PATH_SEP)
+        fullPath = doc_root + PATH_SEP + request.getPath();
+    else
+        fullPath = doc_root + request.getPath();
 
     // 处理静态文件
     serveFile(fullPath, client_socket);
@@ -87,12 +93,11 @@ CgiHandler::CgiHandler(const std::string &root) : RequestHandler(root)
 void CgiHandler::handle(const HttpRequest &request, int client_socket)
 {
     std::string path = doc_root + request.getPath();
-    executeCgi(request, client_socket);
+    executeCgi(request, client_socket, path);
 }
 
-void CgiHandler::executeCgi(const HttpRequest &request, int client_socket)
+void CgiHandler::executeCgi(const HttpRequest &request, int client_socket, std::string path)
 {
-    std::string path = doc_root + request.getPath();
     const std::string &method = request.getMethod();
     const std::string &query_string = request.getQueryString();
 
@@ -102,7 +107,12 @@ void CgiHandler::executeCgi(const HttpRequest &request, int client_socket)
 
 #ifdef _WIN32 // Windows实现CGI执行 - 未实现
     HttpResponse response = HttpResponse::serverError();
-    response.setBody("CGI execution not implemented on Windows in this version.");
+    response.setBody("<html><body>"
+                     "<h2>CGI Error</h2>"
+                     "<p>CGI execution is not fully implemented in Windows version.</p>"
+                     "<p>Required feature will be added in future releases.</p>"
+                     "<p>Please use Linux/Unix for full CGI support.</p>"
+                     "</body></html>");
     response.send(client_socket);
 
 #else // Unix/Linux实现
@@ -117,10 +127,6 @@ void CgiHandler::executeCgi(const HttpRequest &request, int client_socket)
         if (!contentLength.empty())
         {
             content_length = std::stoi(contentLength);
-        }
-        if (it != request.headers.end())
-        {
-            content_length = std::stoi(it->second);
         }
         else
         {
@@ -145,6 +151,12 @@ void CgiHandler::executeCgi(const HttpRequest &request, int client_socket)
     // 创建子进程
     if ((pid = fork()) < 0)
     {
+        // 关闭管道再返回
+        close(cgi_output[0]);
+        close(cgi_output[1]);
+        close(cgi_input[0]);
+        close(cgi_input[1]);
+
         response = HttpResponse::serverError();
         response.send(client_socket);
         return;
@@ -152,9 +164,9 @@ void CgiHandler::executeCgi(const HttpRequest &request, int client_socket)
 
     if (pid == 0)
     { // 子进程运行CGI脚本
-        char meth_env[255];
-        char query_env[255];
-        char length_env[255];
+        std::string meth_env;
+        std::string query_env;
+        std::string length_env;
 
         // 重定向标准输入/输出
         dup2(cgi_output[1], STDOUT_FILENO);
@@ -165,18 +177,18 @@ void CgiHandler::executeCgi(const HttpRequest &request, int client_socket)
         close(cgi_input[1]);
 
         // 设置环境变量
-        sprintf(meth_env, "REQUEST_METHOD=%s", method.c_str());
-        putenv(meth_env);
+        meth_env = "REQUEST_METHOD=" + method;
+        putenv(strdup(meth_env.c_str()));
 
         if (method == "GET")
         {
-            sprintf(query_env, "QUERY_STRING=%s", query_string.c_str());
-            putenv(query_env);
+            query_env = "QUERY_STRING=" + query_string;
+            putenv(strdup(query_env.c_str()));
         }
         else
         { // POST
-            sprintf(length_env, "CONTENT_LENGTH=%d", content_length);
-            putenv(length_env);
+            length_env = "CONTENT_LENGTH=" + std::to_string(content_length);
+            putenv(strdup(length_env.c_str()));
         }
 
         // 执行CGI脚本

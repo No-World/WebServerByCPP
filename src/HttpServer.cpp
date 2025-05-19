@@ -2,7 +2,7 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 19:25:52
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-19 14:32:32
+ * @LastEditTime: 2025-05-19 15:23:33
  * @FilePath: \WebServerByCPP\src\HttpServer.cpp
  * @Description: HTTP服务器核心实现，提供服务器的初始化、启动、停止和请求处理功能
  * 采用跨平台设计，通过条件编译支持Windows和Unix/Linux系统的套接字操作差异
@@ -42,7 +42,6 @@ void HttpServer::platformCleanup()
 HttpServer::HttpServer(unsigned short port)
     : port(ConfigManager::getInt("port", port)), server_socket(-1), running(false)
 {
-    ConfigManager::loadConfig("config/server.conf");
     doc_root = ConfigManager::getString("document_root", "httpdocs");
     default_document = ConfigManager::getString("default_document", "test.html");
 }
@@ -68,11 +67,7 @@ void HttpServer::initSocket()
     struct sockaddr_in server_addr;
 
     // 创建socket
-#ifdef _WIN32
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
-#else
-    server_socket = socket(PF_INET, SOCK_STREAM, 0);
-#endif
 
     if (server_socket == -1)
     {
@@ -201,12 +196,19 @@ void HttpServer::stop()
 // 处理客户端请求
 void HttpServer::handleClient(int client_sock)
 {
-    // 创建请求对象时传入配置
-    HttpRequest request(doc_root, default_document);
+#ifdef _WIN32
+    DWORD timeout = 5000; // 5秒
+    setsockopt(client_sock, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof(timeout));
+#else
+    struct timeval timeout;
+    timeout.tv_sec = 5;
+    timeout.tv_usec = 0;
+    setsockopt(client_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+#endif
     try
     {
-        // 创建请求对象
-        HttpRequest request;
+        // 创建请求对象时传入配置
+        HttpRequest request(doc_root, default_document);
 
         // 解析请求
         if (request.parse(client_sock))

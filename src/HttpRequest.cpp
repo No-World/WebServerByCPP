@@ -2,7 +2,7 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 19:26:23
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-16 15:35:25
+ * @LastEditTime: 2025-05-19 16:00:52
  * @FilePath: \WebServerByCPP\src\HttpRequest.cpp
  * @Description: HTTP请求解析实现, 负责从客户端socket读取数据并解析HTTP请求
  * 支持GET和POST请求处理, 包含请求解析、查询字符串提取、文件路径解析和HTTP头解析
@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cstring>
 #include <iostream>
+#include <sstream>
 #include <sys/stat.h>
 
 // 添加网络编程头文件（跨平台兼容）
@@ -42,9 +43,9 @@ HttpRequest::HttpRequest(const std::string &root, const std::string &default_doc
 int HttpRequest::getLine(int sock, std::string &buf)
 {
     // 使用静态缓冲区提高性能
-    static char read_buffer[MAX_LINE_LENGTH];
-    static int buffer_pos = 0;
-    static int bytes_in_buffer = 0;
+    thread_local static char read_buffer[MAX_LINE_LENGTH];
+    thread_local static int buffer_pos = 0;
+    thread_local static int bytes_in_buffer = 0;
 
     buf.clear(); // 清空字符串
     char c = '\0';
@@ -109,7 +110,7 @@ bool HttpRequest::checkFileAccess()
     // 处理目录
     if ((st.st_mode & S_IFMT) == S_IFDIR)
     {
-        if (path.back() != '/' && path.back() != PATH_SEP)
+        if (path.back() != PATH_SEP)
         {
             path += PATH_SEP;
         }
@@ -132,9 +133,47 @@ bool HttpRequest::checkFileAccess()
     return true;
 }
 
+// URL解码函数
+std::string HttpRequest::urlDecode(const std::string &encoded)
+{
+    std::string result;
+    for (size_t i = 0; i < encoded.length(); ++i)
+    {
+        if (encoded[i] == '%' && i + 2 < encoded.length())
+        {
+            int value;
+            std::istringstream is(encoded.substr(i + 1, 2));
+            if (is >> std::hex >> value)
+            {
+                result += static_cast<char>(value);
+                i += 2;
+            }
+            else
+            {
+                result += encoded[i];
+            }
+        }
+        else if (encoded[i] == '+')
+        {
+            result += ' ';
+        }
+        else
+        {
+            result += encoded[i];
+        }
+    }
+    return result;
+}
+
 // 解析HTTP请求
 bool HttpRequest::parse(int client_socket)
 {
+    // 重置静态缓冲变量
+    thread_local static int buffer_pos = 0;
+    thread_local static int bytes_in_buffer = 0;
+    buffer_pos = 0;
+    bytes_in_buffer = 0;
+
     std::string buf;
     int numchars;
 
@@ -186,7 +225,7 @@ bool HttpRequest::parse(int client_socket)
     }
 
     end = buf.find_first_of(" \t", start);
-    url = buf.substr(start, (end != std::string::npos) ? end - start : std::string::npos);
+    url = urlDecode(buf.substr(start, (end != std::string::npos) ? end - start : std::string::npos));
 
     // 防止目录遍历攻击
     if (url.find("..") != std::string::npos)
@@ -209,14 +248,21 @@ bool HttpRequest::parse(int client_socket)
 
     // 构造文件路径
     // 确保DOC_ROOT末尾有斜杠，url开头没有斜杠
-    if (!DOC_ROOT.empty() && DOC_ROOT.back() != '/')
-        DOC_ROOT += '/';
-    if (!url.empty() && url[0] == '/')
+    std::string doc_root_path = DOC_ROOT;
+    if (!doc_root_path.empty() && doc_root_path.back() != PATH_SEP)
+        doc_root_path += PATH_SEP;
+    if (!url.empty() && url[0] == PATH_SEP)
         url = url.substr(1);
-    path = DOC_ROOT + url;
+    path = doc_root_path + url;
 
     // 规范化路径格式并处理默认文件
+#ifdef _WIN32
     std::replace(path.begin(), path.end(), '/', PATH_SEP);
+#else
+    std::replace(path.begin(), path.end(), '\\', PATH_SEP);
+#endif
+
+    // 如果路径是目录，则添加默认文档
     if (path.back() == PATH_SEP)
     {
         path += DEFAULT_DOCUMENT;

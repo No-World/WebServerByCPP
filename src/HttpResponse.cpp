@@ -2,7 +2,7 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 19:26:33
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-15 19:41:22
+ * @LastEditTime: 2025-05-19 15:29:38
  * @FilePath: \WebServerByCPP\src\HttpResponse.cpp
  * @Description: HTTP响应类实现，负责构建和发送HTTP响应，包括状态码、头部和响应体
  * 提供了标准HTTP响应的工厂方法，支持200 OK、404 Not Found、400 Bad Request等常见状态
@@ -79,8 +79,6 @@ void HttpResponse::send(int client_socket)
 
 void HttpResponse::sendFile(int client_socket, FILE *resource)
 {
-    char buf[1024];
-
     // 先发送头部
     std::string status_line = "HTTP/1.0 " + std::to_string(status_code) + " " + status_message + "\r\n";
     ::send(client_socket, status_line.c_str(), status_line.length(), 0);
@@ -94,12 +92,12 @@ void HttpResponse::sendFile(int client_socket, FILE *resource)
     // 发送空行
     ::send(client_socket, "\r\n", 2, 0);
 
-    // 读取并发送文件内容
-    fgets(buf, sizeof(buf), resource);
-    while (!feof(resource))
+    // 读取文件内容到字符串
+    char temp_buf[1024];
+    size_t bytes_read;
+    while ((bytes_read = fread(temp_buf, 1, sizeof(temp_buf), resource)) > 0)
     {
-        ::send(client_socket, buf, strlen(buf), 0);
-        fgets(buf, sizeof(buf), resource);
+        ::send(client_socket, temp_buf, bytes_read, 0);
     }
 }
 
