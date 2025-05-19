@@ -2,7 +2,7 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 19:26:41
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-19 18:06:28
+ * @LastEditTime: 2025-05-19 18:08:48
  * @FilePath: \WebServerByCPP\src\RequestHandler.cpp
  * @Description: HTTP请求处理器实现，采用策略模式区分静态文件和CGI处理
  * 包含RequestHandler基类及StaticFileHandler和CgiHandler两个子类
@@ -78,7 +78,7 @@ void StaticFileHandler::serveFile(const std::string &path, int client_socket)
     if (resource == nullptr)
     {
         // 获取当前工作目录
-        char cwd[PATH_MAX];
+        char cwd[1024];
         if (getcwd(cwd, sizeof(cwd)) != nullptr)
         {
             std::cout << "文件不存在: " << path << std::endl;
