@@ -207,24 +207,32 @@ void HttpServer::handleClient(int client_sock)
 #endif
     try
     {
-        // 创建请求对象时传入配置
         HttpRequest request(doc_root, default_document);
 
         // 解析请求
-        if (request.parse(client_sock))
+        if (!request.parse(client_sock))
         {
-            // 根据请求类型创建处理器
-            auto handler = RequestHandler::createHandler(request);
+            // 检查error_message判断是文件不存在还是真正的请求格式错误
+            if (request.getErrorMessage().find("File not found") != std::string::npos)
+            {
+                // 文件不存在返回404
+                HttpResponse response = HttpResponse::notFound();
+                response.send(client_sock);
+            }
+            else
+            {
+                // 请求错误返回400
+                HttpResponse response = HttpResponse::badRequest();
+                response.send(client_sock);
+            }
+            return;
+        }
 
-            // 处理请求
-            handler->handle(request, client_sock);
-        }
-        else
-        {
-            // 解析失败，返回400错误
-            HttpResponse response = HttpResponse::badRequest();
-            response.send(client_sock);
-        }
+        // 根据请求类型创建处理器
+        auto handler = RequestHandler::createHandler(request);
+
+        // 处理请求
+        handler->handle(request, client_sock);
     }
     catch (const std::exception &e)
     {
