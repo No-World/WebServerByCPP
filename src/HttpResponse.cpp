@@ -2,7 +2,7 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 19:26:33
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-19 17:43:43
+ * @LastEditTime: 2025-05-19 18:18:29
  * @FilePath: \WebServerByCPP\src\HttpResponse.cpp
  * @Description: HTTP响应类实现，负责构建和发送HTTP响应，包括状态码、头部和响应体
  * 提供了标准HTTP响应的工厂方法，支持200 OK、404 Not Found、400 Bad Request等常见状态
@@ -115,9 +115,9 @@ HttpResponse HttpResponse::notFound()
     response.setStatus(404, "NOT FOUND");
 
     std::string body = "<HTML><TITLE>Not Found</TITLE>\r\n"
-                       "<BODY><P>404 Not Found\r\n"
-                       "The server could not fulfill\r\n"
-                       "your request because the resource specified\r\n"
+                       "<BODY><P>404 Not Found<br>\r\n"
+                       "The server could not fulfill<br>\r\n"
+                       "your request because the resource specified<br>\r\n"
                        "is unavailable or nonexistent.\r\n"
                        "</BODY></HTML>\r\n";
     response.setBody(body);
