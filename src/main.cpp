@@ -10,8 +10,8 @@
  * 使用跨平台初始化和清理函数，确保在不同操作系统上正常工作
  * 作为C++重构版HTTP服务器的驱动程序，展示了现代C++的错误处理和资源管理方法
  */
-#include "include/ConfigManager.h"
-#include "include/HttpServer.h"
+#include "../include/ConfigManager.h"
+#include "../include/HttpServer.h"
 #include <csignal>
 #include <iostream>
 

@@ -8,7 +8,7 @@
  * 支持GET和POST请求处理, 包含请求解析、查询字符串提取、文件路径解析和HTTP头解析
  * 实现了跨平台兼容(Windows/Unix)的网络数据读取和字符串处理
  */
-#include "include/HttpRequest.h"
+#include "../include/HttpRequest.h"
 #include <algorithm>
 #include <cstring>
 #include <iostream>

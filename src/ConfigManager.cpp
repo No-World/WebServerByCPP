@@ -8,7 +8,7 @@
  * 支持字符串、整数、浮点数和布尔值类型的配置读取，采用键值对格式
  * 实现了错误处理和默认值机制，确保配置缺失时程序仍能正常工作
  */
-#include "include/ConfigManager.h"
+#include "../include/ConfigManager.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
