@@ -217,7 +217,7 @@ void HttpServer::handleClient(int client_sock)
             {
                 // 文件不存在返回404
                 HttpResponse response = HttpResponse::notFound();
-                std::cout << client_sock << endl;
+                std::cout << client_sock << std::endl;
                 response.send(client_sock);
             }
             else
