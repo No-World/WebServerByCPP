@@ -25,6 +25,8 @@
 const char PATH_SEP = '\\';
 
 #else
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
