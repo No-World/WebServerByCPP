@@ -2,7 +2,7 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 19:25:52
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-19 16:30:56
+ * @LastEditTime: 2025-05-19 17:45:27
  * @FilePath: \WebServerByCPP\src\HttpServer.cpp
  * @Description: HTTP服务器核心实现，提供服务器的初始化、启动、停止和请求处理功能
  * 采用跨平台设计，通过条件编译支持Windows和Unix/Linux系统的套接字操作差异
@@ -217,6 +217,7 @@ void HttpServer::handleClient(int client_sock)
             {
                 // 文件不存在返回404
                 HttpResponse response = HttpResponse::notFound();
+                std::cout << client_sock << endl;
                 response.send(client_sock);
             }
             else
