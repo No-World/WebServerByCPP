@@ -128,8 +128,8 @@ HttpResponse HttpResponse::badRequest()
     HttpResponse response;
     response.setStatus(400, "BAD REQUEST");
 
-    std::string body = "<P>Your browser sent a bad request, "
-                       "such as a POST without a Content-Length.\r\n";
+    std::string body =
+        "<P>400 BAD REQUEST<br>Your browser sent a bad request, such as a POST without a Content-Length.\r\n";
     response.setBody(body);
     return response;
 }
