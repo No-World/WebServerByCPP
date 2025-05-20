@@ -121,7 +121,7 @@ void HttpServer::initSocket()
         throw std::runtime_error("监听socket失败");
     }
 
-    std::cout << "HTTP服务器启动在端口 " << port << std::endl;
+    std::cout << "HTTP服务器启动在端口 " << port << '\n';
 }
 
 // 启动服务器
@@ -142,7 +142,7 @@ void HttpServer::start()
         socklen_t client_addr_len = sizeof(client_addr);
 #endif
 
-        std::cout << "服务器等待连接..." << std::endl;
+        std::cout << "服务器等待连接..." << '\n';
 
         while (running)
         {
@@ -152,13 +152,15 @@ void HttpServer::start()
             if (client_sock == -1)
             {
                 if (!running)
+                {
                     break;
-                std::cerr << "接受客户端连接失败" << std::endl;
+                }
+                std::cerr << "接受客户端连接失败" << '\n';
                 continue;
             }
 
             std::cout << "新连接: IP=" << inet_ntoa(client_addr.sin_addr) << ", 端口=" << ntohs(client_addr.sin_port)
-                      << std::endl;
+                      << '\n';
 
             // 创建新线程处理请求
             std::thread client_thread(&HttpServer::handleClient, this, client_sock);
@@ -167,7 +169,7 @@ void HttpServer::start()
     }
     catch (const std::exception &e)
     {
-        std::cerr << "服务器错误: " << e.what() << std::endl;
+        std::cerr << "服务器错误: " << e.what() << '\n';
         stop();
     }
 }
@@ -190,7 +192,7 @@ void HttpServer::stop()
         server_socket = -1;
     }
 
-    std::cout << "服务器已停止" << std::endl;
+    std::cout << "服务器已停止" << '\n';
 }
 
 // 处理客户端请求
@@ -216,11 +218,11 @@ void HttpServer::handleClient(int client_sock)
             if (request.getErrorMessage().find("File not found") != std::string::npos)
             {
                 // debug信息
-                std::cout << "=== 文件访问错误 ===" << std::endl;
-                std::cout << "请求URL: " << request.getUrl() << std::endl;
-                std::cout << "尝试访问的完整路径: " << request.getPath() << std::endl;
-                std::cout << "错误信息: " << request.getErrorMessage() << std::endl;
-                std::cout << "=================" << std::endl;
+                std::cerr << "=== 文件访问错误 ===" << '\n';
+                std::cerr << "请求URL: " << request.getUrl() << '\n';
+                std::cerr << "尝试访问的完整路径: " << request.getPath() << '\n';
+                std::cerr << "错误信息: " << request.getErrorMessage() << '\n';
+                std::cerr << "=================" << '\n';
 
                 // 文件不存在返回404
                 HttpResponse response = HttpResponse::notFound();
@@ -243,7 +245,7 @@ void HttpServer::handleClient(int client_sock)
     }
     catch (const std::exception &e)
     {
-        std::cerr << "处理请求错误: " << e.what() << std::endl;
+        std::cerr << "处理请求错误: " << e.what() << '\n';
         try
         {
             // 尝试发送500错误
@@ -253,6 +255,7 @@ void HttpServer::handleClient(int client_sock)
         catch (...)
         {
             // 忽略发送错误响应时的异常
+            std::cerr << "发送错误响应失败" << '\n';
         }
     }
 

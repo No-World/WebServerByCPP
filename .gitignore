@@ -1,0 +1,18 @@
+# 排除缓存和编辑器配置目录
+.cache/
+.vscode/
+
+# 通用排除项
+*.o
+*.obj
+*.exe
+*.out
+*.app
+*.dll
+*.so
+*.dylib
+
+# 构建目录
+build/
+bin/
+obj/

@@ -34,7 +34,7 @@ class HttpRequest
     static constexpr int MAX_LINE_LENGTH = 1024; // 定义最大行长度常量
 
     // 辅助函数
-    static int getLine(int sock, std::string &buf);
+    static size_t getLine(int sock, std::string &buf);
 
     // 检查文件访问权限
     bool checkFileAccess();

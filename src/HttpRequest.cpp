@@ -40,7 +40,7 @@ HttpRequest::HttpRequest(const std::string &root, const std::string &default_doc
 }
 
 // 静态方法：从socket读取一行数据
-int HttpRequest::getLine(int sock, std::string &buf)
+size_t HttpRequest::getLine(int sock, std::string &buf)
 {
     // 使用静态缓冲区提高性能
     thread_local static char read_buffer[MAX_LINE_LENGTH];
@@ -248,7 +248,8 @@ bool HttpRequest::parse(int client_socket)
     // 如果URL是根路径，使用默认文档
     if (url == "/" || url.empty())
     {
-        url = DEFAULT_DOCUMENT;
+        // 不要修改url，保持为"/"
+        // 不要这样做：url = DEFAULT_DOCUMENT;
     }
 
     // 处理GET请求的查询字符串
@@ -279,9 +280,11 @@ bool HttpRequest::parse(int client_socket)
     std::replace(path.begin(), path.end(), '\\', PATH_SEP);
 #endif
 
-    // 如果路径是目录，则添加默认文档
-    if (path.back() == PATH_SEP)
+    // 如果路径以'/'结尾或是根路径，添加默认文档
+    if (path.back() == PATH_SEP || url == "/" || url.empty())
     {
+        if (path.back() != PATH_SEP)
+            path += PATH_SEP;
         path += DEFAULT_DOCUMENT;
     }
 
