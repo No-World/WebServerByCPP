@@ -59,12 +59,8 @@ StaticFileHandler::StaticFileHandler(const std::string &root) : RequestHandler(r
 
 void StaticFileHandler::handle(const HttpRequest &request, int client_socket)
 {
-    // 构造完整的文件路径
-    std::string fullPath;
-    if (!doc_root.empty() && doc_root.back() != '/' && !request.getPath().empty() && request.getPath()[0] != PATH_SEP)
-        fullPath = doc_root + PATH_SEP + request.getPath();
-    else
-        fullPath = doc_root + request.getPath();
+    // 不要再次拼接路径，直接使用HttpRequest中处理好的路径
+    std::string fullPath = request.getPath();
 
     // 处理静态文件
     serveFile(fullPath, client_socket);
@@ -105,7 +101,8 @@ CgiHandler::CgiHandler(const std::string &root) : RequestHandler(root)
 
 void CgiHandler::handle(const HttpRequest &request, int client_socket)
 {
-    std::string path = doc_root + request.getPath();
+    // 不要再次拼接路径，直接使用HttpRequest中处理好的路径
+    std::string path = request.getPath();
     executeCgi(request, client_socket, path);
 }
 

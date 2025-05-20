@@ -264,6 +264,13 @@ bool HttpRequest::parse(int client_socket)
         url = url.substr(1);
     path = doc_root_path + url;
 
+    // debug
+    std::cout << "========== HttpRequest::parse Debug Info ==========" << '\n';
+    std::cout << "doc_root_path: " << doc_root_path << '\n';
+    std::cout << "url: " << url << '\n';
+    std::cout << "path: " << path << '\n';
+    std::cout << "========== HttpRequest::parse Debug Info End ==========" << '\n';
+
     // 规范化路径格式并处理默认文件
 #ifdef _WIN32
     std::replace(path.begin(), path.end(), '/', PATH_SEP);
