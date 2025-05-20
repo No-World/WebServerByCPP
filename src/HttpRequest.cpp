@@ -102,15 +102,6 @@ bool HttpRequest::checkFileAccess()
 {
     struct stat st;
 
-    // 如果是根路径请求，直接使用默认文档
-    if (url == "/" || url.empty())
-    {
-        path = DOC_ROOT;
-        if (path.back() != PATH_SEP)
-            path += PATH_SEP;
-        path += DEFAULT_DOCUMENT;
-    }
-
     if (stat(path.c_str(), &st) == -1)
     {
         // 文件不存在或权限不足
