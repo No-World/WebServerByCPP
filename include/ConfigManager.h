@@ -49,9 +49,6 @@ class ConfigManager
 
     // 保存配置到文件
     static bool saveConfig(const std::string &filename);
-
-    // 打印所有配置项(用于调试)
-    static void dumpConfig();
 };
 
 #endif // CONFIG_MANAGER_H

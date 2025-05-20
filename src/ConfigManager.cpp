@@ -61,6 +61,14 @@ bool ConfigManager::loadConfig(const std::string &filename)
     file.close();
     isLoaded = true;
     std::cout << "已加载" << configData.size() << "个配置项" << std::endl;
+#ifdef _DEBUG
+    std::cout << "========== ConfigManager::loadConfig Debug Info ==========" << '\n';
+    for (const auto &item : configData)
+    {
+        std::cout << item.first << " = " << item.second << std::endl;
+    }
+    std::cout << "========== ConfigManager::loadConfig Debug Info End ==========" << '\n';
+#endif
     return true;
 }
 
@@ -169,15 +177,4 @@ bool ConfigManager::saveConfig(const std::string &filename)
 
     file.close();
     return true;
-}
-
-// 打印所有配置项(用于调试)
-void ConfigManager::dumpConfig()
-{
-    std::cout << "=== 配置项 ===" << std::endl;
-    for (const auto &item : configData)
-    {
-        std::cout << item.first << " = " << item.second << std::endl;
-    }
-    std::cout << "==============" << std::endl;
 }

@@ -218,11 +218,11 @@ void HttpServer::handleClient(int client_sock)
             if (request.getErrorMessage().find("File not found") != std::string::npos)
             {
                 // debug信息
-                std::cerr << "=== 文件访问错误 ===" << '\n';
-                std::cerr << "请求URL: " << request.getUrl() << '\n';
-                std::cerr << "尝试访问的完整路径: " << request.getPath() << '\n';
-                std::cerr << "错误信息: " << request.getErrorMessage() << '\n';
-                std::cerr << "=================" << '\n';
+                std::cerr << "========== HttpServer::handleClient error Info ==========" << '\n';
+                std::cerr << "URL: " << request.getUrl() << '\n';
+                std::cerr << "path: " << request.getPath() << '\n';
+                std::cerr << "error message: " << request.getErrorMessage() << '\n';
+                std::cerr << "========== HttpServer::handleClient error Info End ==========" << '\n';
 
                 // 文件不存在返回404
                 HttpResponse response = HttpResponse::notFound();

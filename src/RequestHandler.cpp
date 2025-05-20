@@ -69,7 +69,12 @@ void StaticFileHandler::handle(const HttpRequest &request, int client_socket)
 void StaticFileHandler::serveFile(const std::string &path, int client_socket)
 {
     FILE *resource = fopen(path.c_str(), "r");
-    std::cout << "请求的文件路径: " << path << std::endl;
+
+#ifdef _DEBUG
+    std::cout << "========== StaticFileHandler::serveFile Debug Info ==========" << '\n';
+    std::cout << "path: " << path << '\n';
+    std::cout << "========== StaticFileHandler::serveFile Debug Info End ==========" << '\n';
+#endif
 
     if (resource == nullptr)
     {
@@ -77,8 +82,8 @@ void StaticFileHandler::serveFile(const std::string &path, int client_socket)
         char cwd[1024];
         if (getcwd(cwd, sizeof(cwd)) != nullptr)
         {
-            std::cout << "文件不存在: " << path << std::endl;
-            std::cout << "当前工作目录: " << cwd << std::endl;
+            std::cerr << "file not found: " << path << '\n';
+            std::cerr << "working directory: " << cwd << '\n';
         }
 
         // 文件不存在，返回404
