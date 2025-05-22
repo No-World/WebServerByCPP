@@ -66,9 +66,11 @@ run: all
 # 调试版本（添加调试信息）
 debug: CXXFLAGS += -g -DDEBUG
 debug: all
+	@echo "以调试模式启动HTTP服务器..."
+	@cd $(BIN_DIR) && cd .. && ./bin/$(TARGET)
 
 # 优化版本
-release: CXXFLAGS += -O2 -DNDEBUG
+release: CXXFLAGS += -O2
 release: all
 
 # 显示帮助信息
