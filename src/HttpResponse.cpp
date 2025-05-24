@@ -2,8 +2,8 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 19:26:33
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-19 18:20:30
- * @FilePath: \WebServerByCPP\src\HttpResponse.cpp
+ * @LastEditTime: 2025-05-24 20:12:04
+ * @FilePath: /WebServerByCPP/src/HttpResponse.cpp
  * @Description: HTTP响应类实现，负责构建和发送HTTP响应，包括状态码、头部和响应体
  * 提供了标准HTTP响应的工厂方法，支持200 OK、404 Not Found、400 Bad Request等常见状态
  * 实现了文件传输功能，能够高效地将文件内容发送给客户端
@@ -13,15 +13,8 @@
 #include "../include/HttpResponse.h"
 #include <cstring>
 #include <iostream>
-
-#ifdef _WIN32
-#include <winsock2.h>
-
-#else
 #include <sys/socket.h>
 #include <unistd.h>
-
-#endif
 
 #define SERVER_STRING "Server: NoWorld's http/0.1.0\r\n"
 
@@ -128,8 +121,10 @@ HttpResponse HttpResponse::badRequest()
     HttpResponse response;
     response.setStatus(400, "BAD REQUEST");
 
-    std::string body =
-        "<P>400 BAD REQUEST<br>Your browser sent a bad request, such as a POST without a Content-Length.\r\n";
+    std::string body = "<HTML><TITLE>400 BAD REQUEST</TITLE>\r\n"
+                       "<BODY><P>400 BAD REQUEST<br>\r\n"
+                       "Your browser sent a bad request, such as a POST without a Content-Length.\r\n"
+                       "</BODY></HTML>\r\n";
     response.setBody(body);
     return response;
 }

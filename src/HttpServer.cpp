@@ -19,25 +19,6 @@
 #include <iostream>
 #include <stdexcept>
 
-// 跨平台相关方法
-void HttpServer::platformInit()
-{
-#ifdef _WIN32
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
-    {
-        throw std::runtime_error("WSAStartup失败");
-    }
-#endif
-}
-
-void HttpServer::platformCleanup()
-{
-#ifdef _WIN32
-    WSACleanup();
-#endif
-}
-
 // 构造函数
 HttpServer::HttpServer(unsigned short port)
     : port(ConfigManager::getInt("port", port)), server_socket(-1), running(false)
@@ -52,11 +33,7 @@ HttpServer::~HttpServer()
     stop();
     if (server_socket != -1)
     {
-#ifdef _WIN32
-        closesocket(server_socket);
-#else
         close(server_socket);
-#endif
         server_socket = -1;
     }
 }
@@ -73,51 +50,30 @@ void HttpServer::initSocket()
     {
         throw std::runtime_error("无法创建socket");
     }
-
     // 设置socket选项
     int opt = 1;
-#ifdef _WIN32 // Windows 环境下
-    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, (const char *)&opt, sizeof(opt)) < 0)
-    {
-        closesocket(server_socket);
-        throw std::runtime_error("设置socket选项失败");
-    }
-#else
     if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
     {
         close(server_socket);
         throw std::runtime_error("设置socket选项失败");
     }
-#endif
 
     // 绑定地址
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
-#ifdef _WIN32
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-#else
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-#endif
 
     if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
-#ifdef _WIN32
-        closesocket(server_socket);
-#else
         close(server_socket);
-#endif
         throw std::runtime_error("绑定socket失败");
     }
 
     // 监听
     if (listen(server_socket, 5) < 0)
     {
-#ifdef _WIN32
-        closesocket(server_socket);
-#else
         close(server_socket);
-#endif
         throw std::runtime_error("监听socket失败");
     }
 
@@ -184,11 +140,7 @@ void HttpServer::stop()
 
     if (server_socket != -1)
     {
-#ifdef _WIN32
-        closesocket(server_socket);
-#else
         close(server_socket);
-#endif
         server_socket = -1;
     }
 
@@ -198,15 +150,10 @@ void HttpServer::stop()
 // 处理客户端请求
 void HttpServer::handleClient(int client_sock)
 {
-#ifdef _WIN32
-    DWORD timeout = 5000; // 5秒
-    setsockopt(client_sock, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof(timeout));
-#else
     struct timeval timeout;
     timeout.tv_sec = 5;
     timeout.tv_usec = 0;
     setsockopt(client_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-#endif
     try
     {
         HttpRequest request(doc_root, default_document);
@@ -258,11 +205,6 @@ void HttpServer::handleClient(int client_sock)
             std::cerr << "发送错误响应失败" << '\n';
         }
     }
-
     // 关闭连接
-#ifdef _WIN32
-    closesocket(client_sock);
-#else
     close(client_sock);
-#endif
 }

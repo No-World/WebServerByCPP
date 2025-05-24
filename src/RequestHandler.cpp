@@ -2,37 +2,27 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 19:26:41
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-19 18:15:22
- * @FilePath: \WebServerByCPP\src\RequestHandler.cpp
- * @Description: HTTP请求处理器实现，采用策略模式区分静态文件和CGI处理
+ * @LastEditTime: 2025-05-24 20:23:28
+ * @FilePath: /WebServerByCPP/src/RequestHandler.cpp
  * 包含RequestHandler基类及StaticFileHandler和CgiHandler两个子类
  * StaticFileHandler负责读取和发送静态文件内容，实现了基本的HTTP静态资源服务
  * CgiHandler实现了CGI脚本执行机制，支持GET和POST方法，使用管道进行进程间通信
- * 提供了跨平台支持，在Windows和Unix/Linux系统下有不同实现方式
+ * 针对Linux/Unix系统优化，使用fork()和exec()实现CGI脚本执行
  * 通过工厂方法根据请求类型自动创建合适的处理器实例
  */
 #include "../include/RequestHandler.h"
 #include "../include/HttpResponse.h"
+#include <arpa/inet.h>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iostream>
-#include <sys/stat.h>
-
-#ifdef _WIN32
-#include <process.h>
-#include <windows.h>
-const char PATH_SEP = '\\';
-
-#else
-#include <arpa/inet.h>
 #include <netinet/in.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 const char PATH_SEP = '/';
-
-#endif
 
 // 基类构造函数
 RequestHandler::RequestHandler(const std::string &root) : doc_root(root)
@@ -70,7 +60,7 @@ void StaticFileHandler::serveFile(const std::string &path, int client_socket)
 {
     FILE *resource = fopen(path.c_str(), "r");
 
-#ifdef _DEBUG
+#ifdef DEBUG
     std::cout << "========== StaticFileHandler::serveFile Debug Info ==========" << '\n';
     std::cout << "path: " << path << '\n';
     std::cout << "========== StaticFileHandler::serveFile Debug Info End ==========" << '\n';
@@ -118,26 +108,12 @@ void CgiHandler::executeCgi(const HttpRequest &request, int client_socket, std::
 
     int cgi_output[2];
     int cgi_input[2];
-
-#ifdef _WIN32 // Windows实现CGI执行 - 未实现
-    HttpResponse response = HttpResponse::serverError();
-    response.setBody("<html><body>"
-                     "<h2>CGI Error</h2>"
-                     "<p>CGI execution is not fully implemented in Windows version.</p>"
-                     "<p>Required feature will be added in future releases.</p>"
-                     "<p>Please use Linux/Unix for full CGI support.</p>"
-                     "</body></html>");
-    response.send(client_socket);
-
-#else // Unix/Linux实现
     pid_t pid;
     int status;
-    int content_length = -1;
-
-    // 检查Content-Length（如果是POST请求）
+    int content_length = -1; // 检查Content-Length（如果是POST请求）
     if (method == "POST")
     {
-        std::string contentLength = request.getHeader("Content-Length");
+        std::string contentLength = request.getHeader("content-length");
         if (!contentLength.empty())
         {
             content_length = std::stoi(contentLength);
@@ -279,5 +255,4 @@ void CgiHandler::executeCgi(const HttpRequest &request, int client_socket, std::
         // 等待子进程结束
         waitpid(pid, &status, 0);
     }
-#endif
 }

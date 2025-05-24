@@ -2,8 +2,8 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 09:00:09
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-19 14:37:08
- * @FilePath: \WebServerByCPP\src\main.cpp
+ * @LastEditTime: 2025-05-24 20:24:35
+ * @FilePath: /WebServerByCPP/src/main.cpp
  * @Description: HTTP服务器程序入口点，负责服务器初始化、实例创建和信号处理
  * 实现了优雅的启动与关闭机制，通过信号处理（如SIGINT）支持用户中断操作
  * 采用异常处理确保在发生错误时能够正确清理资源
@@ -32,9 +32,6 @@ int main()
 {
     try
     {
-        // 初始化平台
-        HttpServer::platformInit();
-
         // 创建服务器
         ConfigManager::loadConfig("config/server.conf");
         unsigned short port = ConfigManager::getInt("port", 6379);
@@ -46,17 +43,11 @@ int main()
 
         std::cout << "HTTP服务器启动中..." << std::endl;
         server.start(); // 这会阻塞直到服务器停止
-
-        // 清理
-        HttpServer::platformCleanup();
         return 0;
     }
     catch (const std::exception &e)
     {
         std::cerr << "错误: " << e.what() << std::endl;
-
-        // 清理
-        HttpServer::platformCleanup();
         return 1;
     }
 }

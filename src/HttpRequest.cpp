@@ -2,34 +2,26 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 19:26:23
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-19 16:00:52
- * @FilePath: \WebServerByCPP\src\HttpRequest.cpp
+ * @LastEditTime: 2025-05-24 20:25:14
+ * @FilePath: /WebServerByCPP/src/HttpRequest.cpp
  * @Description: HTTP请求解析实现, 负责从客户端socket读取数据并解析HTTP请求
  * 支持GET和POST请求处理, 包含请求解析、查询字符串提取、文件路径解析和HTTP头解析
  * 实现了跨平台兼容(Windows/Unix)的网络数据读取和字符串处理
  */
 #include "../include/HttpRequest.h"
 #include <algorithm>
+#include <cerrno>
+#include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <sstream>
 #include <sys/stat.h>
 
-// 添加网络编程头文件（跨平台兼容）
-#ifdef _WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#pragma comment(lib, "Ws2_32.lib")
-#define strcasecmp _stricmp // Windows下strcasecmp的替代
-const char PATH_SEP = '\\';
-
-#else
+// 添加网络编程头文件
 #include <strings.h> // 提供strcasecmp
 #include <sys/socket.h>
 #include <unistd.h>
 const char PATH_SEP = '/';
-
-#endif
 
 // 构造函数初始化
 HttpRequest::HttpRequest(const std::string &root, const std::string &default_doc)
@@ -42,55 +34,30 @@ HttpRequest::HttpRequest(const std::string &root, const std::string &default_doc
 // 静态方法：从socket读取一行数据
 size_t HttpRequest::getLine(int sock, std::string &buf)
 {
-    // 使用静态缓冲区提高性能
-    thread_local static char read_buffer[MAX_LINE_LENGTH];
-    thread_local static int buffer_pos = 0;
-    thread_local static int bytes_in_buffer = 0;
-
-    buf.clear(); // 清空字符串
+    buf.clear();
     char c = '\0';
+    int n;
 
-    while (buf.length() < MAX_LINE_LENGTH - 1 && c != '\n')
+    while ((buf.length() < MAX_LINE_LENGTH - 1) && (c != '\n'))
     {
-        // 如果缓冲区为空，从socket读取更多数据
-        if (buffer_pos >= bytes_in_buffer)
-        {
-            bytes_in_buffer = recv(sock, read_buffer, sizeof(read_buffer), 0);
-            if (bytes_in_buffer <= 0)
-                break;
-            buffer_pos = 0;
-        }
+        n = recv(sock, &c, 1, 0);
 
-        c = read_buffer[buffer_pos++];
-
-        // 处理CR+LF序列 (Windows风格的行结束)
-        if (c == '\r')
+        if (n > 0)
         {
-            // 检查下一个字符是否为\n
-            if (buffer_pos < bytes_in_buffer)
+            if (c == '\r')
             {
-                if (read_buffer[buffer_pos] == '\n')
-                {
-                    buffer_pos++; // 跳过\n
-                }
-                c = '\n';
+                n = recv(sock, &c, 1, MSG_PEEK);
+                if ((n > 0) && (c == '\n'))
+                    recv(sock, &c, 1, 0);
+                else
+                    c = '\n';
             }
-            else
-            {
-                // 如果\r在缓冲区末尾，读取下一个字符
-                char next;
-                int peek_result = recv(sock, &next, 1, MSG_PEEK);
-                if (peek_result > 0 && next == '\n')
-                {
-                    recv(sock, &next, 1, 0); // 消费\n
-                }
-                c = '\n';
-            }
+            if (c != '\n')
+                buf.push_back(c);
         }
-
-        if (c != '\n') // 不存储最后的换行符
+        else
         {
-            buf.push_back(c);
+            c = '\n';
         }
     }
 
@@ -102,9 +69,18 @@ bool HttpRequest::checkFileAccess()
 {
     struct stat st;
 
+#ifdef DEBUG
+    std::cout << "========== HttpRequest::checkFileAccess Debug Info ==========" << '\n';
+    std::cout << "Checking path: " << path << '\n';
+    std::cout << "Path length: " << path.length() << '\n';
+    std::cout << "========== HttpRequest::checkFileAccess Debug Info End ==========" << '\n';
+#endif
+
     if (stat(path.c_str(), &st) == -1)
     {
         // 文件不存在或权限不足
+        std::cerr << "stat() failed for path: " << path << '\n';
+        std::cerr << "errno: " << errno << " (" << strerror(errno) << ")" << '\n';
         error_message = "File not found: " + path;
         return false;
     }
@@ -170,12 +146,6 @@ std::string HttpRequest::urlDecode(const std::string &encoded)
 // 解析HTTP请求
 bool HttpRequest::parse(int client_socket)
 {
-    // 重置静态缓冲变量
-    thread_local static int buffer_pos = 0;
-    thread_local static int bytes_in_buffer = 0;
-    buffer_pos = 0;
-    bytes_in_buffer = 0;
-
     std::string buf;
     int numchars;
 
@@ -262,21 +232,18 @@ bool HttpRequest::parse(int client_socket)
         doc_root_path += PATH_SEP;
     if (!url.empty() && url[0] == PATH_SEP)
         url = url.substr(1);
-    path = doc_root_path + url;
+    path = doc_root_path + url; // debug
 
-    // debug
+#ifdef DEBUG
     std::cout << "========== HttpRequest::parse Debug Info ==========" << '\n';
+    std::cout << "DOC_ROOT: " << DOC_ROOT << '\n';
     std::cout << "doc_root_path: " << doc_root_path << '\n';
     std::cout << "url: " << url << '\n';
     std::cout << "path: " << path << '\n';
     std::cout << "========== HttpRequest::parse Debug Info End ==========" << '\n';
-
-    // 规范化路径格式并处理默认文件
-#ifdef _WIN32
-    std::replace(path.begin(), path.end(), '/', PATH_SEP);
-#else
-    std::replace(path.begin(), path.end(), '\\', PATH_SEP);
 #endif
+    // 规范化路径格式并处理默认文件
+    std::replace(path.begin(), path.end(), '\\', PATH_SEP);
 
     // 如果路径以'/'结尾或是根路径，添加默认文档
     if (path.back() == PATH_SEP || url == "/" || url.empty())

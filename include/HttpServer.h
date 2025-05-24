@@ -2,8 +2,8 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 08:51:24
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-19 16:08:48
- * @FilePath: \WebServerByCPP\include\HttpServer.h
+ * @LastEditTime: 2025-05-24 20:23:30
+ * @FilePath: /WebServerByCPP/include/HttpServer.h
  * @Description: HTTP服务器核心类，实现了跨平台(Windows/Unix)的网络服务器功能。
  * 负责socket初始化、客户端连接管理和请求分发
  * 采用多线程模型处理并发请求, 提供优雅的启动和关闭机制
@@ -19,19 +19,11 @@
 #include <thread>
 #include <vector>
 
-// 跨平台头文件处理
-#ifdef _WIN32 // Windows平台
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#pragma comment(lib, "Ws2_32.lib")
-
-#else // Unix/Linux平台
+// Unix/Linux平台头文件
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
-
-#endif
 
 class HttpServer
 {
@@ -69,10 +61,6 @@ class HttpServer
     // 主要接口
     void start(); // 启动服务器
     void stop();  // 停止服务器
-
-    // 静态平台初始化/清理
-    static void platformInit();    // 初始化平台
-    static void platformCleanup(); // 清理平台
 };
 
 #endif // HTTP_SERVER_H

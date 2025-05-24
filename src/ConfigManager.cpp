@@ -2,8 +2,8 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-16 11:16:09
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-19 14:41:33
- * @FilePath: \WebServerByCPP\src\ConfigManager.cpp
+ * @LastEditTime: 2025-05-24 19:48:40
+ * @FilePath: /WebServerByCPP/src/ConfigManager.cpp
  * @Description: 配置管理器实现，负责加载和解析配置文件，提供访问配置项的接口
  * 支持字符串、整数、浮点数和布尔值类型的配置读取，采用键值对格式
  * 实现了错误处理和默认值机制，确保配置缺失时程序仍能正常工作
@@ -45,14 +45,12 @@ bool ConfigManager::loadConfig(const std::string &filename)
 
         // 提取键和值
         std::string key = line.substr(0, equalPos);
-        std::string value = line.substr(equalPos + 1);
+        std::string value = line.substr(equalPos + 1); // 去除键和值的前导和尾随空白
+        key.erase(0, key.find_first_not_of(" \t\r\n"));
+        key.erase(key.find_last_not_of(" \t\r\n") + 1);
 
-        // 去除键和值的前导和尾随空白
-        key.erase(0, key.find_first_not_of(" \t"));
-        key.erase(key.find_last_not_of(" \t") + 1);
-
-        value.erase(0, value.find_first_not_of(" \t"));
-        value.erase(value.find_last_not_of(" \t") + 1);
+        value.erase(0, value.find_first_not_of(" \t\r\n"));
+        value.erase(value.find_last_not_of(" \t\r\n") + 1);
 
         // 存储配置项
         configData[key] = value;
@@ -61,7 +59,7 @@ bool ConfigManager::loadConfig(const std::string &filename)
     file.close();
     isLoaded = true;
     std::cout << "已加载" << configData.size() << "个配置项" << std::endl;
-#ifdef _DEBUG
+#ifdef DEBUG
     std::cout << "========== ConfigManager::loadConfig Debug Info ==========" << '\n';
     for (const auto &item : configData)
     {
