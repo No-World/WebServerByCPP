@@ -7,7 +7,6 @@
  * @Description: HTTP响应类实现，负责构建和发送HTTP响应，包括状态码、头部和响应体
  * 提供了标准HTTP响应的工厂方法，支持200 OK、404 Not Found、400 Bad Request等常见状态
  * 实现了文件传输功能，能够高效地将文件内容发送给客户端
- * 采用了跨平台设计，在Windows和Unix/Linux系统上提供一致的接口
  * 作为服务器响应处理的核心组件，确保了HTTP协议的正确实现
  */
 #include "../include/HttpResponse.h"

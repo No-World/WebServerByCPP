@@ -6,7 +6,6 @@
  * @FilePath: /WebServerByCPP/src/HttpRequest.cpp
  * @Description: HTTP请求解析实现, 负责从客户端socket读取数据并解析HTTP请求
  * 支持GET和POST请求处理, 包含请求解析、查询字符串提取、文件路径解析和HTTP头解析
- * 实现了跨平台兼容(Windows/Unix)的网络数据读取和字符串处理
  */
 #include "../include/HttpRequest.h"
 #include <algorithm>
@@ -18,7 +17,7 @@
 #include <sys/stat.h>
 
 // 添加网络编程头文件
-#include <strings.h> // 提供strcasecmp
+#include <strings.h>
 #include <sys/socket.h>
 #include <unistd.h>
 const char PATH_SEP = '/';

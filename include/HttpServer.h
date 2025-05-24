@@ -4,7 +4,7 @@
  * @LastEditors: No_World 2259881867@qq.com
  * @LastEditTime: 2025-05-24 20:23:30
  * @FilePath: /WebServerByCPP/include/HttpServer.h
- * @Description: HTTP服务器核心类，实现了跨平台(Windows/Unix)的网络服务器功能。
+ * @Description: HTTP服务器核心类，实现了Linux/Unix的网络服务器功能。
  * 负责socket初始化、客户端连接管理和请求分发
  * 采用多线程模型处理并发请求, 提供优雅的启动和关闭机制
  * 遵循RAII设计原则, 通过构造函数和析构函数自动管理资源

@@ -5,7 +5,6 @@
  * @LastEditTime: 2025-05-19 18:27:23
  * @FilePath: \WebServerByCPP\src\HttpServer.cpp
  * @Description: HTTP服务器核心实现，提供服务器的初始化、启动、停止和请求处理功能
- * 采用跨平台设计，通过条件编译支持Windows和Unix/Linux系统的套接字操作差异
  * 实现了多线程客户端请求处理，提高并发性能，支持短连接和异常处理机制
  * 集成ConfigManager读取配置参数，灵活调整服务器行为
  * 通过组合HttpRequest、HttpResponse和RequestHandler等组件，实现完整的HTTP请求响应流程
