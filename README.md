@@ -4,6 +4,8 @@
 
 WebServerByCPP是一个使用 C++14 开发的轻量级HTTP服务器。该项目复刻于[MyPoorWebServer](https://github.com/forthespada/MyPoorWebServer), 原作者是[阿秀@forthespada](https://github.com/forthespada/), 你可以在本项目根目录下的`old`文件夹中找到原项目的文件
 
+本复刻重构版本也有[单文件版本](./single/README.md)，使用方式与原版一致
+
 ## 主要特性
 
 - **多线程处理**：采用多线程模型处理并发HTTP请求
@@ -27,6 +29,14 @@ WebServerByCPP是一个使用 C++14 开发的轻量级HTTP服务器。该项目�
 ```bash
 git clone https://github.com/No-World/WebServerByCPP.git
 cd WebServerByCPP
+```
+
+### 授予权限
+```bash
+cd  httpdocs
+sudo chmod 600 test.html
+sudo chmod 600 post.html
+sudo chmod +X post.cgi
 ```
 
 ### 编译项目
@@ -102,6 +112,11 @@ WebServerByCPP/
 - **RequestHandler**：请求处理类，负责处理不同类型的HTTP请求
 
 ## 运行截图
+
+## 相关问题自查
+
+- **是否授予文件权限**：未授予权限可能导致文件无法访问/cgi脚本无运行权限
+- **是否使用VMTOOLS共享文件夹**：使用共享文件夹可能导致get请求只返回状态码而不返回文件内容，复制到别的地方貌似也没用，必须重新下载/解压
 
 ## 致谢
 
