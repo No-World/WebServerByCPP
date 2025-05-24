@@ -1,5 +1,4 @@
 # WebServerByCPP项目Makefile
-# 支持Windows (MinGW/MSVC) 和 Unix/Linux 环境
 
 # 编译器设置
 CXX = g++
@@ -18,22 +17,11 @@ INCLUDE_DIR = include
 SRCS = $(wildcard $(SRC_DIR)/*.cpp)
 OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRCS))
 
-# 平台相关设置
-UNAME := $(shell uname)
-ifeq ($(OS),Windows_NT)
-	# Windows系统
-	RM = del /Q
-	MKDIR = mkdir
-	TARGET := $(TARGET).exe
-	LDFLAGS = -lws2_32
-	PATH_SEP = \\
-else
-	# Unix/Linux系统
-	RM = rm -f
-	MKDIR = mkdir -p
-	LDFLAGS = -lpthread
-	PATH_SEP = /
-endif
+# 工具和变量
+RM = rm -f
+MKDIR = mkdir -p
+LDFLAGS = -lpthread
+PATH_SEP = /
 
 # 默认目标
 all: directories $(BIN_DIR)/$(TARGET)

@@ -2,8 +2,8 @@
  * @Author: No_World 2259881867@qq.com
  * @Date: 2025-05-15 19:25:52
  * @LastEditors: No_World 2259881867@qq.com
- * @LastEditTime: 2025-05-19 18:27:23
- * @FilePath: \WebServerByCPP\src\HttpServer.cpp
+ * @LastEditTime: 2025-05-24 20:46:55
+ * @FilePath: /WebServerByCPP/src/HttpServer.cpp
  * @Description: HTTP服务器核心实现，提供服务器的初始化、启动、停止和请求处理功能
  * 实现了多线程客户端请求处理，提高并发性能，支持短连接和异常处理机制
  * 集成ConfigManager读取配置参数，灵活调整服务器行为
@@ -91,11 +91,7 @@ void HttpServer::start()
         running = true;
 
         struct sockaddr_in client_addr;
-#ifdef _WIN32
-        int client_addr_len = sizeof(client_addr);
-#else
         socklen_t client_addr_len = sizeof(client_addr);
-#endif
 
         std::cout << "服务器等待连接..." << '\n';
 

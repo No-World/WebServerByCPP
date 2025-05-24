@@ -45,7 +45,7 @@ sudo chmod +X post.cgi
 # 编译项目
 make
 
-# 编译调试版本
+# 编译并运行调试版本
 make debug
 
 # 编译优化版本
@@ -58,9 +58,12 @@ make release
 # 直接运行
 make run
 
-# 或者手动运行编译后的程序
+# 手动运行编译后的程序
 ./bin/myhttp
-# 注意：手动运行需保证 httpdocs 文件夹与 myhttp 处于同级目录
+# 注意：手动运行需保证 httpdocs 文件夹与编译后的程序 myhttp 处于同级目录
+
+# 运行调试版本
+make debug
 ```
 
 启动服务器后，可以通过浏览器访问`http://localhost:6379/`查看默认页面。
